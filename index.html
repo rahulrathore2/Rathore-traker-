@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Rathore Money Tracker</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="R-Tracker">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: ['class', '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1',
+            accent: '#8b5cf6',
+            success: '#10b981',
+            danger: '#ef4444',
+            warning: '#f59e0b'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons & Chart.js -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="selection:bg-indigo-500 selection:text-white">
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Main App Shell Container -->
+  <div class="max-w-xl mx-auto px-4 pt-5 pb-6">
+
+    <!-- Top App Bar -->
+    <header class="flex items-center justify-between mb-5">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-extrabold text-lg">
+          ₹
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight flex items-center gap-1.5">
+            Rathore Tracker
+            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 font-bold uppercase tracking-wider">Pro</span>
+          </h1>
+          <p class="text-xs text-slate-400 font-medium" id="current-date-text">Loading date...</p>
+        </div>
+      </div>
+
+      <!-- Header Action Controls -->
+      <div class="flex items-center gap-2">
+        <!-- Currency Selector -->
+        <button id="currency-toggle-btn" class="tap-effect px-2.5 py-1.5 rounded-xl border border-white/10 bg-slate-800/60 text-xs font-semibold flex items-center gap-1 hover:bg-slate-700/60 transition">
+          <span id="active-currency-symbol">₹</span>
+          <span id="active-currency-code" class="text-[11px] text-slate-400">INR</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="theme-toggle-btn" class="tap-effect w-9 h-9 rounded-xl border border-white/10 bg-slate-800/60 flex items-center justify-center text-slate-300 hover:text-white transition" title="Toggle Theme">
+          <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- TAB 1: DASHBOARD -->
+    <section id="tab-dashboard" class="space-y-4">
+      
+      <!-- Hero Balance Card -->
+      <div class="balance-card p-6 text-white">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-indigo-100 flex items-center gap-1.5">
+            Total Balance
+            <button id="toggle-balance-visibility" class="p-1 hover:opacity-80 transition" title="Hide/Show Balance">
+              <i data-lucide="eye" id="eye-icon" class="w-3.5 h-3.5"></i>
+            </button>
+          </span>
+          <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md" id="savings-rate-badge">
+            Savings: 0%
+          </span>
+        </div>
+
+        <div class="text-3xl font-extrabold tracking-tight mb-5" id="hero-total-balance">
+          ₹0.00
+        </div>
+
+        <!-- Income & Expense Sub-cards -->
+        <div class="grid grid-cols-2 gap-3 pt-3 border-t border-white/15">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-emerald-500/25 flex items-center justify-center text-emerald-300">
+              <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <p class="text-[11px] text-indigo-100 font-medium">Income</p>
+              <p class="text-sm font-bold text-white" id="hero-income">₹0.00</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-rose-500/25 flex items-center justify-center text-rose-300">
+              <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <p class="text-[11px] text-indigo-100 font-medium">Expenses</p>
+              <p class="text-sm font-bold text-white" id="hero-expenses">₹0.00</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Budget Tracker Card -->
+      <div class="glass-card p-4">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <i data-lucide="target" class="w-4 h-4 text-indigo-400"></i>
+            <span class="text-xs font-bold">Monthly Budget Goal</span>
+          </div>
+          <button id="edit-budget-btn" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1">
+            <i data-lucide="edit-3" class="w-3 h-3"></i> Set Limit
+          </button>
+        </div>
+
+        <div class="flex justify-between items-baseline mb-2">
+          <span class="text-sm font-bold" id="budget-spent-text">₹0 spent</span>
+          <span class="text-xs text-slate-400 font-medium" id="budget-total-text">of ₹25,000 limit</span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-slate-700/40 rounded-full h-2.5 overflow-hidden">
+          <div id="budget-progress-bar" class="bg-gradient-to-r from-emerald-500 to-indigo-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2 flex justify-between" id="budget-alert-text">
+          <span>Remaining: ₹25,000</span>
+          <span>0% used</span>
+        </p>
+      </div>
+
+      <!-- Quick Add Presets -->
+      <div class="flex items-center justify-between gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <button class="quick-add-btn tap-effect flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-white/5 text-xs font-semibold shrink-0" data-amount="50" data-cat="Food" data-note="Chai / Snacks">
+          ☕ +₹50 Chai
+        </button>
+        <button class="quick-add-btn tap-effect flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-white/5 text-xs font-semibold shrink-0" data-amount="100" data-cat="Travel" data-note="Auto / Metro">
+          🛺 +₹100 Travel
+        </button>
+        <button class="quick-add-btn tap-effect flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-white/5 text-xs font-semibold shrink-0" data-amount="200" data-cat="Food" data-note="Lunch / Dinner">
+          🍛 +₹200 Meal
+        </button>
+        <button class="quick-add-btn tap-effect flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-white/5 text-xs font-semibold shrink-0" data-amount="500" data-cat="Groceries" data-note="Grocery">
+          🛒 +₹500 Grocery
+        </button>
+      </div>
+
+      <!-- Recent Transactions Section -->
+      <div class="pt-2">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold flex items-center gap-2">
+            <i data-lucide="clock" class="w-4 h-4 text-indigo-400"></i>
+            Recent Activity
+          </h2>
+          <button id="view-all-transactions-btn" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">
+            See All &rarr;
+          </button>
+        </div>
+
+        <div id="recent-transactions-list" class="space-y-2.5">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ALL TRANSACTIONS -->
+    <section id="tab-transactions" class="space-y-4 hidden">
+      <!-- Search and Filter Bar -->
+      <div class="glass-card p-3 space-y-3">
+        <!-- Search Input -->
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+          <input type="text" id="transaction-search" placeholder="Search notes, category, UPI..." class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-800/60 border border-white/10 text-xs focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs font-medium">
+          <button class="filter-type-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold shrink-0" data-type="all">All</button>
+          <button class="filter-type-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 shrink-0" data-type="expense">Expenses</button>
+          <button class="filter-type-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 shrink-0" data-type="income">Income</button>
+          <button class="filter-type-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 shrink-0" data-type="upi">UPI Only</button>
+          <button class="filter-type-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 shrink-0" data-type="cash">Cash Only</button>
+        </div>
+      </div>
+
+      <!-- Full List -->
+      <div id="all-transactions-list" class="space-y-2.5">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- TAB 3: ANALYTICS -->
+    <section id="tab-analytics" class="space-y-4 hidden">
+      <!-- Donut Chart: Expenses by Category -->
+      <div class="glass-card p-4">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center justify-between">
+          <span>Expense Distribution</span>
+          <span class="text-[11px] text-indigo-400" id="analytics-month-label">This Month</span>
+        </h3>
+        <div class="w-full h-56 flex items-center justify-center">
+          <canvas id="categoryDonutChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Trend Chart: Daily Spending -->
+      <div class="glass-card p-4">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+          Daily Spending Trend
+        </h3>
+        <div class="w-full h-48">
+          <canvas id="spendingTrendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Insights Summary Cards -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="glass-card p-3.5">
+          <p class="text-[11px] text-slate-400 font-semibold mb-1">Top Expense Category</p>
+          <p class="text-sm font-bold text-indigo-300 truncate" id="stat-top-category">-</p>
+        </div>
+        <div class="glass-card p-3.5">
+          <p class="text-[11px] text-slate-400 font-semibold mb-1">Avg Daily Spend</p>
+          <p class="text-sm font-bold text-rose-400" id="stat-avg-spend">₹0</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SETTINGS & BACKUP -->
+    <section id="tab-settings" class="space-y-4 hidden">
+      <div class="glass-card p-4 space-y-4">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Settings & Preferences</h3>
+
+        <!-- Currency Setting -->
+        <div class="flex items-center justify-between py-2 border-b border-white/5">
+          <div>
+            <p class="text-sm font-semibold">Default Currency</p>
+            <p class="text-xs text-slate-400">Select currency symbol</p>
+          </div>
+          <select id="setting-currency-select" class="bg-slate-800 border border-white/10 rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none">
+            <option value="INR" selected>₹ INR (Rupee)</option>
+            <option value="USD">$ USD (Dollar)</option>
+            <option value="EUR">€ EUR (Euro)</option>
+            <option value="GBP">£ GBP (Pound)</option>
+            <option value="AED">AED (Dirham)</option>
+          </select>
+        </div>
+
+        <!-- Monthly Budget Setting -->
+        <div class="flex items-center justify-between py-2 border-b border-white/5">
+          <div>
+            <p class="text-sm font-semibold">Monthly Budget Goal</p>
+            <p class="text-xs text-slate-400">Alert threshold limit</p>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs text-slate-400">₹</span>
+            <input type="number" id="setting-budget-input" value="25000" class="w-24 bg-slate-800 border border-white/10 rounded-xl px-2.5 py-1 text-xs text-right font-bold focus:outline-none">
+            <button id="save-budget-setting-btn" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Export & Backup Card -->
+      <div class="glass-card p-4 space-y-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Data & Backup</h3>
+        <p class="text-xs text-slate-400">All your data is safely saved on your device (100% private, zero server storage).</p>
+
+        <div class="grid grid-cols-2 gap-2.5 pt-1">
+          <button id="export-json-btn" class="tap-effect flex items-center justify-center gap-2 p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-xs font-semibold">
+            <i data-lucide="download" class="w-4 h-4 text-indigo-400"></i> Backup (JSON)
+          </button>
+          <button id="export-csv-btn" class="tap-effect flex items-center justify-center gap-2 p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-xs font-semibold">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i> Export Excel (CSV)
+          </button>
+        </div>
+
+        <div class="pt-2">
+          <label class="tap-effect flex items-center justify-center gap-2 p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-xs font-semibold cursor-pointer">
+            <i data-lucide="upload" class="w-4 h-4 text-amber-400"></i> Restore from JSON
+            <input type="file" id="import-json-input" accept=".json" class="hidden">
+          </label>
+        </div>
+
+        <div class="pt-3 border-t border-white/5">
+          <button id="clear-all-data-btn" class="tap-effect w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-semibold">
+            <i data-lucide="trash-2" class="w-4 h-4"></i> Reset All Data
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ADD / EDIT TRANSACTION MODAL -->
+  <div id="transaction-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 class="text-base font-bold" id="modal-title">Add Transaction</h3>
+        <button id="close-modal-btn" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="transaction-form" class="space-y-4 pt-4">
+        <!-- Type Switcher (Expense / Income) -->
+        <div class="grid grid-cols-2 gap-2 bg-slate-800/80 p-1 rounded-2xl border border-white/5">
+          <button type="button" id="type-expense-btn" class="py-2 rounded-xl text-xs font-bold transition bg-rose-600 text-white shadow-md">
+            💸 Expense
+          </button>
+          <button type="button" id="type-income-btn" class="py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+            💰 Income
+          </button>
+        </div>
+
+        <!-- Amount Input -->
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Amount</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-3 text-lg font-bold text-slate-400" id="input-currency-symbol">₹</span>
+            <input type="number" step="any" id="trans-amount" required placeholder="0.00" class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-800 border border-white/10 text-xl font-extrabold focus:outline-none focus:border-indigo-500">
+          </div>
+          <!-- Quick Amount Chips -->
+          <div class="flex items-center gap-1.5 mt-2 overflow-x-auto pb-1 scrollbar-none">
+            <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 border border-white/5 text-[11px] font-semibold text-slate-300" data-val="50">+50</button>
+            <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 border border-white/5 text-[11px] font-semibold text-slate-300" data-val="100">+100</button>
+            <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 border border-white/5 text-[11px] font-semibold text-slate-300" data-val="500">+500</button>
+            <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 border border-white/5 text-[11px] font-semibold text-slate-300" data-val="1000">+1,000</button>
+            <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 border border-white/5 text-[11px] font-semibold text-slate-300" data-val="2000">+2,000</button>
+          </div>
+        </div>
+
+        <!-- Category Grid -->
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Category</label>
+          <div class="grid grid-cols-4 gap-2" id="category-selector-container">
+            <!-- Populated dynamically based on Expense or Income -->
+          </div>
+        </div>
+
+        <!-- Payment Mode -->
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Payment Mode</label>
+          <div class="grid grid-cols-3 gap-2 text-xs font-semibold">
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-800 border border-white/10 cursor-pointer hover:bg-slate-700">
+              <input type="radio" name="payment-mode" value="UPI" checked class="text-indigo-600">
+              <span>⚡ UPI</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-800 border border-white/10 cursor-pointer hover:bg-slate-700">
+              <input type="radio" name="payment-mode" value="Cash" class="text-indigo-600">
+              <span>💵 Cash</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-800 border border-white/10 cursor-pointer hover:bg-slate-700">
+              <input type="radio" name="payment-mode" value="Card" class="text-indigo-600">
+              <span>💳 Card</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Date & Note -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
+            <input type="date" id="trans-date" required class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10 text-xs focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Note (Optional)</label>
+            <input type="text" id="trans-note" placeholder="e.g. Swiggy, Petrol" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10 text-xs focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <input type="hidden" id="trans-id">
+
+        <button type="submit" class="tap-effect w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 hover:opacity-95 transition">
+          Save Transaction
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- BUDGET EDIT MODAL -->
+  <div id="budget-modal" class="modal-overlay">
+    <div class="modal-content max-w-sm">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 class="text-base font-bold">Set Monthly Budget</h3>
+        <button id="close-budget-modal-btn" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="space-y-4 pt-4">
+        <p class="text-xs text-slate-400">Set maximum spending limit for this month to keep your expenses in check.</p>
+        <div class="relative">
+          <span class="absolute left-3.5 top-2.5 text-base font-bold text-slate-400">₹</span>
+          <input type="number" id="quick-budget-input" value="25000" class="w-full pl-8 pr-4 py-2.5 rounded-xl bg-slate-800 border border-white/10 text-lg font-bold focus:outline-none focus:border-indigo-500">
+        </div>
+        <button id="save-quick-budget-btn" class="tap-effect w-full py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-md">
+          Update Budget
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION BAR -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="tab-dashboard">
+      <i data-lucide="layout-grid" class="w-5 h-5"></i>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" data-tab="tab-transactions">
+      <i data-lucide="receipt" class="w-5 h-5"></i>
+      <span>Records</span>
+    </button>
+    
+    <!-- Floating Add Button -->
+    <button id="open-add-modal-btn" class="nav-fab-btn" title="Add Transaction">
+      <i data-lucide="plus" class="w-6 h-6"></i>
+    </button>
+
+    <button class="nav-item" data-tab="tab-analytics">
+      <i data-lucide="pie-chart" class="w-5 h-5"></i>
+      <span>Analytics</span>
+    </button>
+    <button class="nav-item" data-tab="tab-settings">
+      <i data-lucide="settings" class="w-5 h-5"></i>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+  <!-- Main JavaScript Application Logic -->
+  <script src="./js/app.js"></script>
+</body>
+</html>
